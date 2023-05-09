@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="bw_ros_serial" name="bw_serial" type="bw_serial" output="screen">
+    </node>
+</launch>
