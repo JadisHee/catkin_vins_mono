@@ -21,6 +21,45 @@ sensor_msgs::Imu imu_data;
 serial::Serial imu_ser("/dev/ttyUSB0", 115200, serial::Timeout::simpleTimeout(100));
 
 /**
+ * @brief 用于解算imu回传四元数数据
+ * @param data 回传报文
+ * @param start_bit 四元数数据的起始位
+ * @returns a q1/q2/q3/q4
+*/
+double read_qua(std::string data, int start_bit)
+{
+   char dot = '.';
+   char a_1 = data[start_bit];
+   char a_2 = data[start_bit + 1];
+   char a_3[6];
+
+    for (int i = 0; i < 6; i++)
+    {
+        a_3[i] = data[i + start_bit + 2];
+    }
+
+    bool a_1_ = a_1 - '0';
+    int a_2_ = a_2 - '0';
+    int a_3_ = a_3[0] - '0';
+    int a_4_ = a_3[1] - '0';
+    int a_5_ = a_3[2] - '0';
+    int a_6_ = a_3[3] - '0';
+    int a_7_ = a_3[4] - '0';
+    int a_8_ = a_3[5] - '0';
+    int decimal = dot == '.' ? 1 : 0;
+    double a;
+    if (a_1_)
+    {
+        a = (a_2_ + a_3_ * pow(10, -1 * decimal) + a_4_ * pow(100, -1 * decimal) + a_5_ * pow(1000, -1 * decimal) + a_6_ * pow(10000, -1 * decimal) + a_7_ * pow(100000, -1 * decimal) + a_8_ * pow(1000000, -1 * decimal));
+    }
+    else
+    {
+        a = -(a_2_ + a_3_ * pow(10, -1 * decimal) + a_4_ * pow(100, -1 * decimal) + a_5_ * pow(1000, -1 * decimal) + a_6_ * pow(10000, -1 * decimal) + a_7_ * pow(100000, -1 * decimal) + a_8_ * pow(1000000, -1 * decimal));        
+    }
+    return a;
+}
+
+/**
  * @brief 用于解算imu回传加速度数据
  * @param data 回传报文
  * @param start_bit 加速度数据的起始位
@@ -103,6 +142,8 @@ double read_gyo(std::string data, int start_bit)
 
 }
 
+
+
 using namespace std;
 
 
@@ -113,7 +154,7 @@ int main(int argc, char **argv)
 
     ros::NodeHandle nh;
 
-    ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("/imu0", 1000);
+    ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("/imu/data", 1000);
 
     // 待发送的报文
     uint8_t imu_send_data[] = {0x77, 0x04, 0x00, 0x59, 0x5D};
@@ -160,14 +201,18 @@ int main(int argc, char **argv)
         imu_data.orientation.x = 0;
         imu_data.orientation.y = 0;
         imu_data.orientation.z = 0;
+        /* imu_data.orientation.w = read_qua(imu_response, 62);
+        imu_data.orientation.x = read_qua(imu_response, 70);
+        imu_data.orientation.y = read_qua(imu_response, 78);
+        imu_data.orientation.z = read_qua(imu_response, 86); */
         // 给加速度赋值，bw传感器中反馈的是以G值为单位的加速度数据
         imu_data.linear_acceleration.x = read_acc(imu_response, 26) * 9.79134;
         imu_data.linear_acceleration.y = read_acc(imu_response, 32) * 9.79134;
         imu_data.linear_acceleration.z = read_acc(imu_response, 38) * 9.79134;
         // 给角速度赋值，bw传感器中反馈的属于与加速度所在坐标系存在偏差，因此进行如下变换
-        imu_data.angular_velocity.x = - read_gyo(imu_response, 50);
-        imu_data.angular_velocity.y = read_gyo(imu_response, 44);
-        imu_data.angular_velocity.z = - read_gyo(imu_response, 56);
+        imu_data.angular_velocity.x = - read_gyo(imu_response, 50) * M_PI /180;
+        imu_data.angular_velocity.y = read_gyo(imu_response, 44) * M_PI /180;
+        imu_data.angular_velocity.z = - read_gyo(imu_response, 56) * M_PI /180;
         // 发布话题
         imu_pub.publish(imu_data);
         // 清理串口

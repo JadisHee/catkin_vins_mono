@@ -8,13 +8,13 @@ output_path: "/home/tony-ws1/output/"
 #camera calibration 
 model_type: PINHOLE
 camera_name: camera
-image_width: 752
+image_width: 640
 image_height: 480
 distortion_parameters:
-   k1: -2.917e-01
-   k2: 8.228e-02
-   p1: 5.333e-05
-   p2: -1.578e-04
+#   k1: -2.917e-01
+#   k2: 8.228e-02
+#   p1: 5.333e-05
+#   p2: -1.578e-04
 projection_parameters:
    fx: 4.616e+02
    fy: 4.603e+02
